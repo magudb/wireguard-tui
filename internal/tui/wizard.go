@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,6 +51,21 @@ type wizardModel struct {
 	generatedPSK string
 
 	err error
+}
+
+// isValidInterfaceName checks that a name is safe for use as a Linux
+// network interface name: non-empty, at most 15 characters, and only
+// containing alphanumeric characters, hyphens, and underscores.
+func isValidInterfaceName(name string) bool {
+	if len(name) == 0 || len(name) > 15 {
+		return false
+	}
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // suggestInterfaceName returns the next available wgN name by checking
@@ -156,7 +172,7 @@ func (a App) updateWizard(msg tea.Msg) (App, tea.Cmd) {
 	case configSavedMsg:
 		a.message = fmt.Sprintf("Created profile %q", msg.name)
 		a.currentView = viewList
-		return a, loadProfiles()
+		return a, tea.Batch(loadProfiles(), clearMessageAfter(3*time.Second))
 
 	case tea.KeyMsg:
 		key := msg.String()
@@ -284,9 +300,15 @@ func (a App) wizardHandleMainStep(msg tea.KeyMsg) (App, tea.Cmd) {
 	if msg.String() == "enter" {
 		val := strings.TrimSpace(w.inputs[w.step].Value())
 		// Validate required fields
-		if w.step == 0 && val == "" {
-			w.err = fmt.Errorf("interface name is required")
-			return a, nil
+		if w.step == 0 {
+			if val == "" {
+				w.err = fmt.Errorf("interface name is required")
+				return a, nil
+			}
+			if !isValidInterfaceName(val) {
+				w.err = fmt.Errorf("invalid interface name: use only a-z, A-Z, 0-9, hyphen, underscore (max 15 chars)")
+				return a, nil
+			}
 		}
 		if w.step == 1 && val == "" {
 			w.err = fmt.Errorf("address is required")

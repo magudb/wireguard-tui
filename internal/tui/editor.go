@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -159,7 +160,7 @@ func (a App) updateEditor(msg tea.Msg) (App, tea.Cmd) {
 		if isUp {
 			a.message += " (restart interface for changes to take effect)"
 		}
-		return a, nil
+		return a, clearMessageAfter(3 * time.Second)
 
 	case tea.KeyMsg:
 		key := msg.String()
@@ -218,7 +219,19 @@ func (a App) editorUpdateMain(msg tea.KeyMsg) (App, tea.Cmd) {
 		e.focusIndex++
 		e.inputs[e.focusIndex].Focus()
 		return a, nil
+	}
 
+	// If a text input is focused, delegate all remaining keystrokes to it
+	// instead of processing action keys (a, d, 1-9). This prevents action
+	// keys from firing while the user is typing in a field.
+	if e.inputs[e.focusIndex].Focused() {
+		var cmd tea.Cmd
+		e.inputs[e.focusIndex], cmd = e.inputs[e.focusIndex].Update(msg)
+		return a, cmd
+	}
+
+	// Action keys only work when no text input has focus
+	switch key {
 	case "a":
 		// Add a new peer
 		newPeer := wg.Peer{
@@ -228,7 +241,6 @@ func (a App) editorUpdateMain(msg tea.KeyMsg) (App, tea.Cmd) {
 		e.peerIdx = len(e.peers) - 1
 		e.editingPeer = true
 		e.peerFocus = 0
-		e.inputs[e.focusIndex].Blur()
 		e.peerInputs = makeEditorPeerInputs()
 		e.peerInputs = populatePeerInputs(e.peerInputs, newPeer)
 		e.peerInputs[0].Focus()
@@ -254,7 +266,6 @@ func (a App) editorUpdateMain(msg tea.KeyMsg) (App, tea.Cmd) {
 			e.peerIdx = idx
 			e.editingPeer = true
 			e.peerFocus = 0
-			e.inputs[e.focusIndex].Blur()
 			e.peerInputs = makeEditorPeerInputs()
 			e.peerInputs = populatePeerInputs(e.peerInputs, e.peers[idx])
 			e.peerInputs[0].Focus()
@@ -262,10 +273,7 @@ func (a App) editorUpdateMain(msg tea.KeyMsg) (App, tea.Cmd) {
 		return a, nil
 	}
 
-	// Delegate to the focused text input
-	var cmd tea.Cmd
-	e.inputs[e.focusIndex], cmd = e.inputs[e.focusIndex].Update(msg)
-	return a, cmd
+	return a, nil
 }
 
 // editorUpdatePeerEdit handles key events when editing a peer.

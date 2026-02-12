@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -24,6 +26,13 @@ type errMsg struct{ err error }
 type clearErrMsg struct{}
 type navigateMsg struct{ view viewType }
 type refreshMsg struct{}
+
+// clearMessageAfter returns a command that clears err and message after a delay.
+func clearMessageAfter(d time.Duration) tea.Cmd {
+	return tea.Tick(d, func(t time.Time) tea.Msg {
+		return clearErrMsg{}
+	})
+}
 
 // App is the root Bubble Tea model. It manages navigation between views.
 type App struct {
@@ -72,7 +81,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		a.err = msg.err
-		return a, nil
+		return a, clearMessageAfter(3 * time.Second)
 
 	case clearErrMsg:
 		a.err = nil
