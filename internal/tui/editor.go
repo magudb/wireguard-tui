@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -160,7 +159,7 @@ func (a App) updateEditor(msg tea.Msg) (App, tea.Cmd) {
 		if isUp {
 			a.message += " (restart interface for changes to take effect)"
 		}
-		return a, clearMessageAfter(3 * time.Second)
+		return a, clearMessages()
 
 	case tea.KeyMsg:
 		key := msg.String()

@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -60,7 +59,7 @@ func (a App) updateConfirm(msg tea.Msg) (App, tea.Cmd) {
 	case deletedMsg:
 		a.message = fmt.Sprintf("Deleted profile %q", msg.name)
 		a.currentView = viewList
-		return a, tea.Batch(loadProfiles(), clearMessageAfter(3*time.Second))
+		return a, tea.Batch(loadProfiles(), clearMessages())
 
 	case tea.KeyMsg:
 		switch msg.String() {

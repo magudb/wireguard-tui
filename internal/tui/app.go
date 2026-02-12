@@ -27,9 +27,9 @@ type clearErrMsg struct{}
 type navigateMsg struct{ view viewType }
 type refreshMsg struct{}
 
-// clearMessageAfter returns a command that clears err and message after a delay.
-func clearMessageAfter(d time.Duration) tea.Cmd {
-	return tea.Tick(d, func(t time.Time) tea.Msg {
+// clearMessages returns a command that clears err and message after 3 seconds.
+func clearMessages() tea.Cmd {
+	return tea.Tick(3*time.Second, func(t time.Time) tea.Msg {
 		return clearErrMsg{}
 	})
 }
@@ -81,7 +81,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		a.err = msg.err
-		return a, clearMessageAfter(3 * time.Second)
+		return a, clearMessages()
 
 	case clearErrMsg:
 		a.err = nil

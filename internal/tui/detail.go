@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -36,7 +35,7 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 			state = "UP"
 		}
 		a.message = fmt.Sprintf("%s is now %s", msg.name, state)
-		return a, clearMessageAfter(3 * time.Second)
+		return a, clearMessages()
 
 	case tea.KeyMsg:
 		switch msg.String() {

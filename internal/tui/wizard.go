@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -172,7 +171,7 @@ func (a App) updateWizard(msg tea.Msg) (App, tea.Cmd) {
 	case configSavedMsg:
 		a.message = fmt.Sprintf("Created profile %q", msg.name)
 		a.currentView = viewList
-		return a, tea.Batch(loadProfiles(), clearMessageAfter(3*time.Second))
+		return a, tea.Batch(loadProfiles(), clearMessages())
 
 	case tea.KeyMsg:
 		key := msg.String()
