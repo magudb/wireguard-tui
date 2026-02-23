@@ -17,6 +17,7 @@ const (
 	viewImport
 	viewExport
 	viewConfirm
+	viewTeleport
 )
 
 const configDir = "/etc/wireguard"
@@ -38,14 +39,15 @@ func clearMessages() tea.Cmd {
 type App struct {
 	currentView viewType
 
-	list       listModel
-	detail     detailModel
-	wizard     wizardModel
-	editor     editorModel
-	status     statusModel
-	importView importModel
-	exportView exportModel
-	confirm    confirmModel
+	list         listModel
+	detail       detailModel
+	wizard       wizardModel
+	editor       editorModel
+	status       statusModel
+	importView   importModel
+	exportView   exportModel
+	confirm      confirmModel
+	teleportView teleportModel
 
 	width   int
 	height  int
@@ -112,6 +114,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a, cmd = a.updateExport(msg)
 	case viewConfirm:
 		a, cmd = a.updateConfirm(msg)
+	case viewTeleport:
+		a, cmd = a.updateTeleport(msg)
 	}
 
 	return a, cmd
@@ -137,6 +141,8 @@ func (a App) View() string {
 		content = a.exportView.view(a.width, a.height)
 	case viewConfirm:
 		content = a.confirm.view(a.width, a.height)
+	case viewTeleport:
+		content = a.teleportView.view(a.width, a.height)
 	}
 
 	if a.err != nil {

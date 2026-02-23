@@ -39,6 +39,11 @@ const (
 	sectionPeer
 )
 
+// ParseConfigFromString parses a WireGuard config from a string.
+func ParseConfigFromString(s string) (*Interface, error) {
+	return ParseConfig(strings.NewReader(s))
+}
+
 // ParseConfig reads a WireGuard .conf format from r and returns the parsed Interface.
 // Lines starting with # are treated as comments and skipped.
 // Empty lines are skipped. Parse errors include line number context.

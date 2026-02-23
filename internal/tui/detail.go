@@ -6,12 +6,14 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mlu/wireguard-tui/internal/teleport"
 	wg "github.com/mlu/wireguard-tui/internal/wg"
 )
 
 type detailModel struct {
-	profile *wg.Interface
-	isUp    bool
+	profile          *wg.Interface
+	isUp             bool
+	hasTeleportToken bool
 }
 
 type toggledMsg struct {
@@ -21,8 +23,9 @@ type toggledMsg struct {
 
 func newDetailModel(profile *wg.Interface, isUp bool) detailModel {
 	return detailModel{
-		profile: profile,
-		isUp:    isUp,
+		profile:          profile,
+		isUp:             isUp,
+		hasTeleportToken: teleport.HasToken("/etc/wireguard/.teleport", profile.Name),
 	}
 }
 
@@ -67,6 +70,14 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 			a.exportView = newExportModel(a.detail.profile)
 			a.currentView = viewExport
 			return a, nil
+
+		case "r":
+			name := a.detail.profile.Name
+			if teleport.HasToken("/etc/wireguard/.teleport", name) {
+				a.teleportView = newTeleportReconnectModel(name)
+				a.currentView = viewTeleport
+				return a, reconnectTeleport(name)
+			}
 
 		case "d":
 			name := a.detail.profile.Name
@@ -155,8 +166,11 @@ func (d detailModel) view(width, height int) string {
 	b.WriteString("\n")
 	help := helpKey("e", "edit") + "  " +
 		helpKey("s", "status") + "  " +
-		helpKey("t", "toggle") + "  " +
-		helpKey("x", "export") + "  " +
+		helpKey("t", "toggle") + "  "
+	if d.hasTeleportToken {
+		help += helpKey("r", "reconnect") + "  "
+	}
+	help += helpKey("x", "export") + "  " +
 		helpKey("d", "delete") + "  " +
 		helpKey("esc", "back")
 	b.WriteString(help)

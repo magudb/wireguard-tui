@@ -95,6 +95,10 @@ func (a App) updateList(msg tea.Msg) (App, tea.Cmd) {
 		case "i":
 			a.importView = newImportModel()
 			a.currentView = viewImport
+		case "a":
+			a.teleportView = newTeleportSetupModel()
+			a.currentView = viewTeleport
+			return a, nil
 		case "t":
 			if len(a.list.profiles) > 0 {
 				name := a.list.profiles[a.list.cursor].Name
@@ -160,6 +164,7 @@ func (l listModel) view(width, height int) string {
 
 	b.WriteString("\n")
 	help := helpKey("n", "new") + "  " +
+		helpKey("a", "amplifi") + "  " +
 		helpKey("t", "toggle") + "  " +
 		helpKey("i", "import") + "  " +
 		helpKey("q", "quit")
