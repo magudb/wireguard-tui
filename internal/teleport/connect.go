@@ -1,7 +1,9 @@
 package teleport
 
 import (
+	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -121,6 +123,17 @@ func connectWithToken(client *Client, deviceToken string) (string, error) {
 	attrs, err := ParseAmplifiAttributes(answerSDP)
 	if err != nil {
 		return "", fmt.Errorf("parsing SDP answer: %w", err)
+	}
+
+	// Validate server-supplied values before using them in WireGuard config
+	if net.ParseIP(attrs.InterfaceAddr) == nil {
+		return "", fmt.Errorf("invalid interface address from SDP: %q", attrs.InterfaceAddr)
+	}
+	if net.ParseIP(attrs.DNSAddr) == nil {
+		return "", fmt.Errorf("invalid DNS address from SDP: %q", attrs.DNSAddr)
+	}
+	if decoded, err := base64.StdEncoding.DecodeString(attrs.RemotePublicKey); err != nil || len(decoded) != 32 {
+		return "", fmt.Errorf("invalid public key from SDP: %q", attrs.RemotePublicKey)
 	}
 
 	// Register ICE callback before SetRemoteDescription to avoid race condition
