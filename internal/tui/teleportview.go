@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -9,6 +10,8 @@ import (
 	"github.com/mlu/wireguard-tui/internal/teleport"
 	wg "github.com/mlu/wireguard-tui/internal/wg"
 )
+
+var validProfileName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 type teleportMode int
 
@@ -31,6 +34,9 @@ type teleportDoneMsg struct {
 	name       string
 	configText string
 }
+
+// teleportErrMsg is a teleport-specific error that bypasses the global errMsg handler.
+type teleportErrMsg struct{ err error }
 
 func newTeleportSetupModel() teleportModel {
 	name := textinput.New()
@@ -76,7 +82,7 @@ func (a App) updateTeleport(msg tea.Msg) (App, tea.Cmd) {
 		a.currentView = viewList
 		return a, tea.Batch(loadProfiles(), clearMessages())
 
-	case errMsg:
+	case teleportErrMsg:
 		a.teleportView.connecting = false
 		a.teleportView.err = msg.err
 		return a, nil
@@ -116,6 +122,10 @@ func (a App) updateTeleport(msg tea.Msg) (App, tea.Cmd) {
 					a.teleportView.err = fmt.Errorf("profile name is required")
 					return a, nil
 				}
+				if !validProfileName.MatchString(name) {
+					a.teleportView.err = fmt.Errorf("name must contain only letters, numbers, hyphens, underscores")
+					return a, nil
+				}
 				if pin == "" {
 					a.teleportView.err = fmt.Errorf("PIN is required")
 					return a, nil
@@ -145,7 +155,7 @@ func connectTeleport(pin, name string) tea.Cmd {
 	return func() tea.Msg {
 		result, err := teleport.Connect(pin, name)
 		if err != nil {
-			return errMsg{err: err}
+			return teleportErrMsg{err: err}
 		}
 		return teleportDoneMsg{name: result.Name, configText: result.ConfigText}
 	}
@@ -155,7 +165,7 @@ func reconnectTeleport(name string) tea.Cmd {
 	return func() tea.Msg {
 		result, err := teleport.Connect("", name)
 		if err != nil {
-			return errMsg{err: err}
+			return teleportErrMsg{err: err}
 		}
 		return teleportDoneMsg{name: result.Name, configText: result.ConfigText}
 	}

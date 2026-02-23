@@ -25,7 +25,7 @@ func newDetailModel(profile *wg.Interface, isUp bool) detailModel {
 	return detailModel{
 		profile:          profile,
 		isUp:             isUp,
-		hasTeleportToken: teleport.HasToken("/etc/wireguard/.teleport", profile.Name),
+		hasTeleportToken: teleport.HasToken(teleport.CredentialDir, profile.Name),
 	}
 }
 
@@ -73,7 +73,7 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 
 		case "r":
 			name := a.detail.profile.Name
-			if teleport.HasToken("/etc/wireguard/.teleport", name) {
+			if teleport.HasToken(teleport.CredentialDir, name) {
 				a.teleportView = newTeleportReconnectModel(name)
 				a.currentView = viewTeleport
 				return a, reconnectTeleport(name)

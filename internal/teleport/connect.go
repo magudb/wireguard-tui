@@ -13,7 +13,8 @@ const (
 	stunServer     = "stun:global.stun.twilio.com:3478"
 	devicePlatform = "iOS"
 	iceTimeout     = 30 * time.Second
-	credentialDir  = "/etc/wireguard/.teleport"
+	// CredentialDir is where Teleport tokens and UUIDs are stored.
+	CredentialDir = "/etc/wireguard/.teleport"
 )
 
 // ConnectResult holds the output of a successful Teleport connection.
@@ -32,7 +33,7 @@ func Connect(pin, name string) (*ConnectResult, error) {
 	var deviceToken string
 	if pin != "" {
 		// First-time: exchange PIN for device token
-		uuid, err := LoadOrCreateUUID(credentialDir, name)
+		uuid, err := LoadOrCreateUUID(CredentialDir, name)
 		if err != nil {
 			return nil, fmt.Errorf("loading UUID: %w", err)
 		}
@@ -42,13 +43,13 @@ func Connect(pin, name string) (*ConnectResult, error) {
 			return nil, fmt.Errorf("requesting device token: %w", err)
 		}
 
-		if err := SaveToken(credentialDir, name, deviceToken); err != nil {
+		if err := SaveToken(CredentialDir, name, deviceToken); err != nil {
 			return nil, fmt.Errorf("saving device token: %w", err)
 		}
 	} else {
 		// Reconnect: load saved token
 		var err error
-		deviceToken, err = LoadToken(credentialDir, name)
+		deviceToken, err = LoadToken(CredentialDir, name)
 		if err != nil {
 			return nil, fmt.Errorf("no saved token for %q (use PIN for initial setup): %w", name, err)
 		}
@@ -122,6 +123,23 @@ func connectWithToken(client *Client, deviceToken string) (string, error) {
 		return "", fmt.Errorf("parsing SDP answer: %w", err)
 	}
 
+	// Register ICE callback before SetRemoteDescription to avoid race condition
+	iceDone := make(chan error, 1)
+	pc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
+		switch state {
+		case webrtc.ICEConnectionStateCompleted, webrtc.ICEConnectionStateConnected:
+			select {
+			case iceDone <- nil:
+			default:
+			}
+		case webrtc.ICEConnectionStateFailed:
+			select {
+			case iceDone <- fmt.Errorf("ICE connection failed"):
+			default:
+			}
+		}
+	})
+
 	// Set remote description to start ICE negotiation
 	answer := webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
@@ -130,17 +148,6 @@ func connectWithToken(client *Client, deviceToken string) (string, error) {
 	if err := pc.SetRemoteDescription(answer); err != nil {
 		return "", fmt.Errorf("setting remote description: %w", err)
 	}
-
-	// Wait for ICE connection to complete (get the nominated candidate pair)
-	iceDone := make(chan error, 1)
-	pc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
-		switch state {
-		case webrtc.ICEConnectionStateCompleted, webrtc.ICEConnectionStateConnected:
-			iceDone <- nil
-		case webrtc.ICEConnectionStateFailed:
-			iceDone <- fmt.Errorf("ICE connection failed")
-		}
-	})
 
 	select {
 	case err := <-iceDone:

@@ -58,7 +58,11 @@ func (c *Client) post(path, token string, body any) ([]byte, error) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	data, err := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("POST %s: HTTP %d %s", path, resp.StatusCode, resp.Status)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1MB max
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
