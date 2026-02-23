@@ -13,6 +13,7 @@ Requires `sudo` because WireGuard configuration lives in `/etc/wireguard/` and i
 - **Import** from `.conf` files with preview before saving
 - **Export** as config text or QR code, with save-to-file
 - **Delete** with confirmation dialog
+- **Amplifi Teleport** — create and refresh VPN profiles for Ubiquiti Amplifi routers via WebRTC signaling
 
 ## Requirements
 
@@ -49,6 +50,7 @@ sudo cp wireguard-tui /usr/local/bin/
 | `j` / `k` | Move cursor up/down    |
 | `enter`   | Open profile detail     |
 | `n`       | New profile (wizard)    |
+| `a`       | Amplifi Teleport setup  |
 | `t`       | Toggle selected profile |
 | `i`       | Import profile          |
 | `q`       | Quit                    |
@@ -57,12 +59,36 @@ sudo cp wireguard-tui /usr/local/bin/
 
 | Key   | Action          |
 |-------|-----------------|
-| `e`   | Edit profile    |
-| `s`   | Live status     |
-| `t`   | Toggle up/down  |
-| `x`   | Export profile  |
-| `d`   | Delete profile  |
-| `esc` | Back to list    |
+| `e`   | Edit profile              |
+| `s`   | Live status               |
+| `t`   | Toggle up/down            |
+| `r`   | Reconnect Teleport        |
+| `x`   | Export profile            |
+| `d`   | Delete profile            |
+| `esc` | Back to list              |
+
+`r` only appears for profiles with a saved Teleport token.
+
+## Amplifi Teleport
+
+Native support for [Ubiquiti Amplifi](https://amplifi.com/) Teleport VPN. Create WireGuard profiles that connect through your Amplifi router without manually configuring anything.
+
+### Initial setup
+
+1. Open the AmpliFi app on your phone
+2. Go to **Teleport** → **Add Device** to get a PIN
+3. In wireguard-tui, press `a` from the list view
+4. Enter a profile name and the PIN, then press Enter
+5. The TUI connects via WebRTC signaling, negotiates an ICE endpoint, and generates a WireGuard config automatically
+
+### Reconnecting
+
+Teleport endpoints change when your network conditions change. To refresh:
+
+1. Select the Teleport profile and press Enter to open it
+2. Press `r` to reconnect — a new endpoint is negotiated using the saved device token (no PIN needed)
+
+Tokens are stored in `/etc/wireguard/.teleport/`.
 
 ## Waybar Integration
 
@@ -147,6 +173,12 @@ windowrule = tag +floating-window, match:class org.omarchy.wireguard-tui
 │   │   ├── status.go           Status parsing (wg show output)
 │   │   ├── qr.go               QR code generation
 │   │   └── *_test.go           Tests for each module
+│   ├── teleport/               Amplifi Teleport backend
+│   │   ├── credentials.go      Token and UUID persistence
+│   │   ├── client.go           Amplifi API client
+│   │   ├── sdp.go              SDP attribute injection/parsing
+│   │   ├── connect.go          WebRTC orchestration and config generation
+│   │   └── *_test.go           Tests for each module
 │   └── tui/                    Terminal UI (Bubbletea)
 │       ├── app.go              Root model, view routing, shared messages
 │       ├── styles.go           Lipgloss styles and colors
@@ -157,7 +189,8 @@ windowrule = tag +floating-window, match:class org.omarchy.wireguard-tui
 │       ├── status.go           Live status with auto-refresh
 │       ├── importview.go       Import from .conf file
 │       ├── export.go           Export as text/QR with save
-│       └── confirm.go          Confirmation dialog
+│       ├── confirm.go          Confirmation dialog
+│       └── teleportview.go     Amplifi Teleport setup/reconnect
 └── examples/
     └── waybar-wireguard        Waybar status script
 ```
@@ -168,3 +201,4 @@ windowrule = tag +floating-window, match:class org.omarchy.wireguard-tui
 - [bubbles](https://github.com/charmbracelet/bubbles) — Text input components
 - [lipgloss](https://github.com/charmbracelet/lipgloss) — Terminal styling
 - [go-qrcode](https://github.com/skip2/go-qrcode) — QR code generation
+- [pion/webrtc](https://github.com/pion/webrtc) — WebRTC for Amplifi Teleport
