@@ -1,6 +1,6 @@
 module github.com/mlu/wireguard-tui
 
-go 1.25.1
+go 1.25.7
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
