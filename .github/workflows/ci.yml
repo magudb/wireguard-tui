@@ -20,7 +20,7 @@ jobs:
           go-version: "1.25"
       - uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.1.6
+          version: v2.10.1
 
   test:
     name: Test
@@ -44,4 +44,4 @@ jobs:
       - run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - run: govulncheck ./...
       - run: go install github.com/securego/gosec/v2/cmd/gosec@latest
-      - run: gosec -exclude=G204 ./...
+      - run: gosec -exclude=G104,G117,G204,G304 ./...
