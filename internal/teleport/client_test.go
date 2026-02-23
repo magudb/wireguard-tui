@@ -23,7 +23,7 @@ func TestRequestDeviceToken(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"success":   true,
 			"client_id": "device-token-123",
 		})
@@ -43,7 +43,7 @@ func TestRequestDeviceToken(t *testing.T) {
 func TestRequestDeviceTokenFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
 			"error":   "invalid pin",
 		})
@@ -63,10 +63,10 @@ func TestGetICEConfig(t *testing.T) {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
-			"servers": []interface{}{
-				map[string]interface{}{"urls": "stun:stun.example.com:3478"},
+			"servers": []any{
+				map[string]any{"urls": "stun:stun.example.com:3478"},
 			},
 		})
 	}))
@@ -95,7 +95,7 @@ func TestSignalingConnect(t *testing.T) {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"answer":  "v=0\r\ns=-\r\n",
 		})

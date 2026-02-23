@@ -35,7 +35,7 @@ func (c *Client) httpClient() *http.Client {
 	return &http.Client{Timeout: 30 * time.Second}
 }
 
-func (c *Client) post(path, token string, body interface{}) ([]byte, error) {
+func (c *Client) post(path, token string, body any) ([]byte, error) {
 	var buf bytes.Buffer
 	if body != nil {
 		if err := json.NewEncoder(&buf).Encode(body); err != nil {
@@ -110,7 +110,7 @@ func (c *Client) GetICEConfig(token string) (json.RawMessage, error) {
 
 // SignalingConnect sends an SDP offer and returns the SDP answer.
 func (c *Client) SignalingConnect(offer string, iceServers json.RawMessage, token string) (string, error) {
-	data, err := c.post("/api/deviceToken/mlClientConnect", token, map[string]interface{}{
+	data, err := c.post("/api/deviceToken/mlClientConnect", token, map[string]any{
 		"iceServers": iceServers,
 		"offer":      offer,
 	})
