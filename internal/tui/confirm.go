@@ -35,7 +35,7 @@ func (d deleteAction) execute() tea.Msg {
 	if err := wg.DeleteConfig(configDir, d.name); err != nil {
 		return errMsg{err}
 	}
-	return deletedMsg{name: d.name}
+	return deletedMsg(d)
 }
 
 type deletedMsg struct{ name string }

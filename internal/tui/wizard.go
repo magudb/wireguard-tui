@@ -60,7 +60,7 @@ func isValidInterfaceName(name string) bool {
 		return false
 	}
 	for _, c := range name {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') { //nolint:staticcheck // QF1001 De Morgan's form is less readable here
 			return false
 		}
 	}
@@ -685,7 +685,7 @@ func (w wizardModel) viewAskMore() string {
 	b.WriteString(descStyle.Render(indicator))
 	b.WriteString("\n\n")
 
-	b.WriteString(fmt.Sprintf("  %d peer(s) added.\n\n", len(w.peers)))
+	fmt.Fprintf(&b, "  %d peer(s) added.\n\n", len(w.peers))
 	b.WriteString("  Add another peer?")
 	b.WriteString("\n\n")
 
@@ -710,9 +710,9 @@ func (w wizardModel) viewPeerSummary() string {
 		b.WriteString("  " + descStyle.Render("No peers added yet."))
 		b.WriteString("\n\n")
 	} else {
-		b.WriteString(fmt.Sprintf("  %d peer(s) configured:\n\n", len(w.peers)))
+		fmt.Fprintf(&b, "  %d peer(s) configured:\n\n", len(w.peers))
 		for i, p := range w.peers {
-			b.WriteString(fmt.Sprintf("  Peer %d: %s\n", i+1, truncateKey(p.PublicKey, 20)))
+			fmt.Fprintf(&b, "  Peer %d: %s\n", i+1, truncateKey(p.PublicKey, 20))
 		}
 		b.WriteString("\n")
 	}

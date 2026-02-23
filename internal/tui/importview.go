@@ -17,7 +17,6 @@ type importModel struct {
 	preview   string
 	parsed    *wg.Interface
 	err       error
-	confirmed bool
 }
 
 // importDoneMsg is sent after an import config has been successfully saved.
@@ -59,9 +58,8 @@ func (a App) updateImport(msg tea.Msg) (App, tea.Cmd) {
 					im.err = fmt.Errorf("opening file: %w", err)
 					return a, nil
 				}
-				defer f.Close()
-
 				iface, err := wg.ParseConfig(f)
+				_ = f.Close()
 				if err != nil {
 					im.err = fmt.Errorf("parsing config: %w", err)
 					return a, nil

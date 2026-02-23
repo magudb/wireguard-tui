@@ -69,12 +69,12 @@ func ParseConfig(r io.Reader) (*Interface, error) {
 		}
 
 		// Parse Key = Value pairs
-		eqIdx := strings.Index(line, "=")
-		if eqIdx < 0 {
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
 			return nil, fmt.Errorf("line %d: expected Key = Value, got %q", lineNum, line)
 		}
-		key := strings.TrimSpace(line[:eqIdx])
-		value := strings.TrimSpace(line[eqIdx+1:])
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 
 		switch section {
 		case sectionInterface:
@@ -212,7 +212,7 @@ func LoadConfigsFromDir(dir string) ([]*Interface, error) {
 		}
 
 		iface, err := ParseConfig(f)
-		f.Close()
+		_ = f.Close()
 		if err != nil {
 			return nil, fmt.Errorf("parsing %s: %w", path, err)
 		}

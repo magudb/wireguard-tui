@@ -136,7 +136,7 @@ func (d detailModel) view(width, height int) string {
 	// Individual peers
 	for i, peer := range p.Peers {
 		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("  Peer %d:\n", i+1))
+		fmt.Fprintf(&b, "  Peer %d:\n", i+1)
 
 		if peer.PublicKey != "" {
 			b.WriteString("    " + labelStyle.Render("Public Key:") + valueStyle.Render(truncateKey(peer.PublicKey, 20)) + "\n")

@@ -138,7 +138,7 @@ func (s statusModel) view(width, height int) string {
 		var peerContent strings.Builder
 
 		truncatedKey := truncateKey(peer.PublicKey, 12)
-		peerContent.WriteString(fmt.Sprintf("Peer %d: %s\n", i+1, valueStyle.Render(truncatedKey)))
+		fmt.Fprintf(&peerContent, "Peer %d: %s\n", i+1, valueStyle.Render(truncatedKey))
 
 		if peer.Endpoint != "" {
 			peerContent.WriteString("  " + labelStyle.Render("Endpoint:") + valueStyle.Render(peer.Endpoint) + "\n")
