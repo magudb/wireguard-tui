@@ -56,7 +56,7 @@ func (c *Client) post(path, token string, body any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
