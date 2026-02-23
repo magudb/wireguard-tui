@@ -34,7 +34,7 @@ func InjectTunnelInfo(sdp, friendlyName, platform, publicKey string) string {
 func ParseAmplifiAttributes(sdp string) (AmplifiAttributes, error) {
 	var attrs AmplifiAttributes
 
-	for _, line := range strings.Split(sdp, "\n") {
+	for line := range strings.SplitSeq(sdp, "\n") {
 		line = strings.TrimRight(line, "\r")
 		if !strings.HasPrefix(line, "a=") {
 			continue
