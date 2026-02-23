@@ -1,0 +1,17 @@
+#!/bin/bash
+# Waybar custom module for WireGuard connection status
+# Uses 'ip' (no root needed) to detect active WireGuard interfaces
+
+interfaces=$(ip -j link show type wireguard 2>/dev/null)
+
+if [ -z "$interfaces" ] || [ "$interfaces" = "[]" ]; then
+    echo '{"text": "󰖂", "tooltip": "WireGuard: No active tunnels", "class": "disconnected"}'
+else
+    names=$(echo "$interfaces" | jq -r '.[].ifname' | paste -sd ', ')
+    count=$(echo "$interfaces" | jq 'length')
+    if [ "$count" -eq 1 ]; then
+        echo "{\"text\": \"󰖂\", \"tooltip\": \"WireGuard: $names\", \"class\": \"connected\"}"
+    else
+        echo "{\"text\": \"󰖂 $count\", \"tooltip\": \"WireGuard: $names\", \"class\": \"connected\"}"
+    fi
+fi

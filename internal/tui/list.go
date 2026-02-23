@@ -61,6 +61,15 @@ func (a App) updateList(msg tea.Msg) (App, tea.Cmd) {
 		}
 		return a, nil
 
+	case toggledMsg:
+		a.list.active[msg.name] = msg.nowUp
+		state := "DOWN"
+		if msg.nowUp {
+			state = "UP"
+		}
+		a.message = fmt.Sprintf("%s is now %s", msg.name, state)
+		return a, clearMessages()
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
@@ -86,6 +95,17 @@ func (a App) updateList(msg tea.Msg) (App, tea.Cmd) {
 		case "i":
 			a.importView = newImportModel()
 			a.currentView = viewImport
+		case "t":
+			if len(a.list.profiles) > 0 {
+				name := a.list.profiles[a.list.cursor].Name
+				return a, func() tea.Msg {
+					nowUp, err := wg.Toggle(name)
+					if err != nil {
+						return errMsg{err}
+					}
+					return toggledMsg{name: name, nowUp: nowUp}
+				}
+			}
 		}
 
 	case refreshMsg:
@@ -140,6 +160,7 @@ func (l listModel) view(width, height int) string {
 
 	b.WriteString("\n")
 	help := helpKey("n", "new") + "  " +
+		helpKey("t", "toggle") + "  " +
 		helpKey("i", "import") + "  " +
 		helpKey("q", "quit")
 	b.WriteString(help)
