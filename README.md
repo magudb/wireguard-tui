@@ -142,7 +142,7 @@ chmod +x ~/.local/bin/waybar-wireguard
 }
 ```
 
-4. Restart Waybar to apply changes.
+4. Restart Waybar to apply changes (`omarchy-restart-waybar` on Omarchy).
 
 ### Launcher script (optional)
 

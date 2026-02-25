@@ -1,10 +1,69 @@
 #!/bin/bash
 # Waybar custom module for WireGuard connection status
 # Uses 'ip' (no root needed) to detect active WireGuard interfaces
+#
+# INSTALL
+# -------
+#   cp examples/waybar-wireguard ~/.local/bin/waybar-wireguard
+#   chmod +x ~/.local/bin/waybar-wireguard
+#
+# WAYBAR CONFIG  (~/.config/waybar/config.jsonc)
+# -------------
+# 1. Add "custom/wireguard" to your modules-right array:
+#
+#   "modules-right": [
+#       "custom/wireguard",
+#       "network",
+#       ...
+#   ],
+#
+# 2. Add the module definition:
+#
+#   "custom/wireguard": {
+#       "exec": "waybar-wireguard",
+#       "return-type": "json",
+#       "interval": 5,
+#       "on-click": "wireguard-tui-launch",
+#       "tooltip": true
+#   },
+#
+# WAYBAR STYLE  (~/.config/waybar/style.css)
+# ------------
+# Add these rules (adjust colors to match your theme):
+#
+#   #custom-wireguard {
+#       background-color: @background;
+#       color: @foreground;
+#       padding: 0 10px;
+#       margin: 5px 0;
+#   }
+#
+#   #custom-wireguard.connected {
+#       color: #8bc34a;
+#   }
+#
+#   #custom-wireguard.disconnected {
+#       color: @inactive;
+#   }
+#
+# LAUNCHER (optional)
+# -------------------
+# Create ~/.local/bin/wireguard-tui-launch for the on-click action:
+#
+#   #!/bin/bash
+#   exec setsid uwsm-app -- xdg-terminal-exec \
+#       --app-id=org.omarchy.wireguard-tui -e sudo wireguard-tui
+#
+# Then add a Hyprland window rule to float it:
+#
+#   windowrule = tag +floating-window, match:class org.omarchy.wireguard-tui
+#
+# After any waybar config changes, restart with: omarchy-restart-waybar
 
-interfaces=$(ip -j link show type wireguard 2>/dev/null)
+raw=$(ip -j link show type wireguard 2>/dev/null)
+interfaces=$(echo "$raw" | jq -c '[.[] | select(.ifname)]' 2>/dev/null)
 
-if [ -z "$interfaces" ] || [ "$interfaces" = "[]" ]; then
+if [ -z "$interfaces" ] || [ "$interfaces" = "[]" ] || [ "$interfaces" = "null" ]; then
     echo '{"text": "󰖂", "tooltip": "WireGuard: No active tunnels", "class": "disconnected"}'
 else
     names=$(echo "$interfaces" | jq -r '.[].ifname' | paste -sd ', ')
