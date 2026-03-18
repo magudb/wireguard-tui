@@ -134,9 +134,9 @@ while IFS= read -r iface; do
         [ "$tx_diff" -lt 0 ] && tx_diff=0
         rx_rate=$(format_rate "$rx_diff" "$elapsed")
         tx_rate=$(format_rate "$tx_diff" "$elapsed")
-        tooltip="$tooltip\n$iface  ↓ $rx_rate  ↑ $tx_rate"
+        tooltip="$tooltip"$'\n'"$iface  ↓ $rx_rate  ↑ $tx_rate"
     else
-        tooltip="$tooltip\n$iface  measuring..."
+        tooltip="$tooltip"$'\n'"$iface  measuring..."
     fi
 done < <(echo "$interfaces" | jq -r '.[].ifname')
 
