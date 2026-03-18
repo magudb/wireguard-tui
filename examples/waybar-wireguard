@@ -1,6 +1,7 @@
 #!/bin/bash
-# Waybar custom module for WireGuard connection status
-# Uses 'ip' (no root needed) to detect active WireGuard interfaces
+# Waybar custom module for WireGuard connection status with throughput
+# Uses 'ip' (no root needed) to detect active WireGuard interfaces.
+# Throughput is read from /proc/net/dev and calculated between poll intervals.
 #
 # INSTALL
 # -------
@@ -60,17 +61,94 @@
 #
 # After any waybar config changes, restart with: omarchy-restart-waybar
 
+STATS_FILE="/tmp/waybar-wireguard-stats"
+
 raw=$(ip -j link show type wireguard 2>/dev/null)
 interfaces=$(echo "$raw" | jq -c '[.[] | select(.ifname)]' 2>/dev/null)
 
 if [ -z "$interfaces" ] || [ "$interfaces" = "[]" ] || [ "$interfaces" = "null" ]; then
     echo '{"text": "󰖂", "tooltip": "WireGuard: No active tunnels", "class": "disconnected"}'
-else
-    names=$(echo "$interfaces" | jq -r '.[].ifname' | paste -sd ', ')
-    count=$(echo "$interfaces" | jq 'length')
-    if [ "$count" -eq 1 ]; then
-        echo "{\"text\": \"󰖂\", \"tooltip\": \"WireGuard: $names\", \"class\": \"connected\"}"
-    else
-        echo "{\"text\": \"󰖂 $count\", \"tooltip\": \"WireGuard: $names\", \"class\": \"connected\"}"
-    fi
+    exit 0
 fi
+
+names=$(echo "$interfaces" | jq -r '.[].ifname' | paste -sd ', ')
+count=$(echo "$interfaces" | jq 'length')
+
+# --- Throughput calculation ---
+
+NOW=$(date +%s)
+declare -A cur_rx cur_tx
+
+while IFS= read -r iface; do
+    line=$(grep "^\s*${iface}:" /proc/net/dev 2>/dev/null)
+    if [ -n "$line" ]; then
+        cur_rx[$iface]=$(echo "$line" | awk '{print $2}')
+        cur_tx[$iface]=$(echo "$line" | awk '{print $10}')
+    fi
+done < <(echo "$interfaces" | jq -r '.[].ifname')
+
+# Load previous sample
+prev_time=0
+declare -A prev_rx prev_tx
+
+if [ -f "$STATS_FILE" ]; then
+    while IFS='=' read -r key val; do
+        case "$key" in
+            time)    prev_time=$val ;;
+            rx_*)    prev_rx[${key#rx_}]=$val ;;
+            tx_*)    prev_tx[${key#tx_}]=$val ;;
+        esac
+    done < "$STATS_FILE"
+fi
+
+# Persist current sample
+{
+    echo "time=$NOW"
+    for iface in "${!cur_rx[@]}"; do
+        echo "rx_${iface}=${cur_rx[$iface]}"
+        echo "tx_${iface}=${cur_tx[$iface]}"
+    done
+} > "$STATS_FILE"
+
+# Format bytes/s → human-readable bit rate using awk (no bc dependency)
+format_rate() {
+    local bytes=$1 elapsed=$2
+    awk -v b="$bytes" -v e="$elapsed" 'BEGIN {
+        bps = (e > 0) ? (b * 8) / e : 0
+        if      (bps >= 1000000) printf "%.1f Mbps", bps / 1000000
+        else if (bps >= 1000)    printf "%.0f Kbps", bps / 1000
+        else                     printf "%d bps",    bps
+    }'
+}
+
+# Build tooltip lines per interface
+elapsed=$((NOW - prev_time))
+tooltip="WireGuard: $names"
+
+while IFS= read -r iface; do
+    if [ -n "${prev_rx[$iface]+x}" ] && [ "$elapsed" -gt 0 ]; then
+        rx_diff=$(( cur_rx[$iface] - prev_rx[$iface] ))
+        tx_diff=$(( cur_tx[$iface] - prev_tx[$iface] ))
+        # Guard against counter reset on reconnect
+        [ "$rx_diff" -lt 0 ] && rx_diff=0
+        [ "$tx_diff" -lt 0 ] && tx_diff=0
+        rx_rate=$(format_rate "$rx_diff" "$elapsed")
+        tx_rate=$(format_rate "$tx_diff" "$elapsed")
+        tooltip="$tooltip\n$iface  ↓ $rx_rate  ↑ $tx_rate"
+    else
+        tooltip="$tooltip\n$iface  measuring..."
+    fi
+done < <(echo "$interfaces" | jq -r '.[].ifname')
+
+# Use jq to emit valid JSON (handles escaping of \n in tooltip)
+if [ "$count" -eq 1 ]; then
+    text="󰖂"
+else
+    text="󰖂 $count"
+fi
+
+jq -cn \
+    --arg text    "$text" \
+    --arg tooltip "$tooltip" \
+    --arg class   "connected" \
+    '{text: $text, tooltip: $tooltip, class: $class}'
