@@ -17,7 +17,6 @@ type teleportMode int
 
 const (
 	teleportSetup teleportMode = iota
-	teleportReconnect
 )
 
 type teleportModel struct {
@@ -27,7 +26,6 @@ type teleportModel struct {
 	focusIndex  int // 0=name, 1=pin
 	connecting  bool
 	err         error
-	profileName string // set for reconnect mode
 }
 
 type teleportDoneMsg struct {
@@ -53,14 +51,6 @@ func newTeleportSetupModel() teleportModel {
 		nameInput:  name,
 		pinInput:   pin,
 		focusIndex: 0,
-	}
-}
-
-func newTeleportReconnectModel(profileName string) teleportModel {
-	return teleportModel{
-		mode:        teleportReconnect,
-		profileName: profileName,
-		connecting:  true,
 	}
 }
 
@@ -94,11 +84,7 @@ func (a App) updateTeleport(msg tea.Msg) (App, tea.Cmd) {
 
 		switch msg.String() {
 		case "esc":
-			if a.teleportView.mode == teleportReconnect {
-				a.currentView = viewDetail
-			} else {
-				a.currentView = viewList
-			}
+			a.currentView = viewList
 			return a, loadProfiles()
 
 		case "tab", "shift+tab":
@@ -161,16 +147,6 @@ func connectTeleport(pin, name string) tea.Cmd {
 	}
 }
 
-func reconnectTeleport(name string) tea.Cmd {
-	return func() tea.Msg {
-		result, err := teleport.Connect("", name)
-		if err != nil {
-			return teleportErrMsg{err: err}
-		}
-		return teleportDoneMsg{name: result.Name, configText: result.ConfigText}
-	}
-}
-
 // teleportToggleDoneMsg signals that a Teleport config was regenerated and the interface toggled.
 type teleportToggleDoneMsg struct {
 	name  string
@@ -221,19 +197,6 @@ func teleportToggleCmd(name string) tea.Cmd {
 
 func (m teleportModel) view(width, height int) string {
 	var b strings.Builder
-
-	if m.mode == teleportReconnect {
-		b.WriteString(titleStyle.Render("Reconnect: " + m.profileName))
-		b.WriteString("\n\n")
-		if m.connecting {
-			b.WriteString("  " + descStyle.Render("Connecting to Amplifi router..."))
-		} else if m.err != nil {
-			b.WriteString("  " + errorStyle.Render("Error: "+m.err.Error()))
-			b.WriteString("\n\n")
-			b.WriteString(helpKey("esc", "back"))
-		}
-		return b.String()
-	}
 
 	b.WriteString(titleStyle.Render("Amplifi Teleport"))
 	b.WriteString("\n\n")

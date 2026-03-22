@@ -11,9 +11,8 @@ import (
 )
 
 type detailModel struct {
-	profile          *wg.Interface
-	isUp             bool
-	hasTeleportToken bool
+	profile *wg.Interface
+	isUp    bool
 }
 
 type toggledMsg struct {
@@ -23,9 +22,8 @@ type toggledMsg struct {
 
 func newDetailModel(profile *wg.Interface, isUp bool) detailModel {
 	return detailModel{
-		profile:          profile,
-		isUp:             isUp,
-		hasTeleportToken: teleport.HasToken(teleport.CredentialDir, profile.Name),
+		profile: profile,
+		isUp:    isUp,
 	}
 }
 
@@ -61,7 +59,7 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 				return a, nil
 			}
 			name := a.detail.profile.Name
-			if a.detail.hasTeleportToken {
+			if teleport.HasToken(teleport.CredentialDir, name) {
 				a.toggling = true
 				a.message = "Regenerating Teleport config..."
 				return a, teleportToggleCmd(name)
@@ -78,14 +76,6 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 			a.exportView = newExportModel(a.detail.profile)
 			a.currentView = viewExport
 			return a, nil
-
-		case "r":
-			name := a.detail.profile.Name
-			if teleport.HasToken(teleport.CredentialDir, name) {
-				a.teleportView = newTeleportReconnectModel(name)
-				a.currentView = viewTeleport
-				return a, reconnectTeleport(name)
-			}
 
 		case "d":
 			name := a.detail.profile.Name
@@ -174,11 +164,8 @@ func (d detailModel) view(width, height int) string {
 	b.WriteString("\n")
 	help := helpKey("e", "edit") + "  " +
 		helpKey("s", "status") + "  " +
-		helpKey("t", "toggle") + "  "
-	if d.hasTeleportToken {
-		help += helpKey("r", "reconnect") + "  "
-	}
-	help += helpKey("x", "export") + "  " +
+		helpKey("t", "toggle") + "  " +
+		helpKey("x", "export") + "  " +
 		helpKey("d", "delete") + "  " +
 		helpKey("esc", "back")
 	b.WriteString(help)
