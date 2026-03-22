@@ -107,7 +107,7 @@ func (s statusModel) view(width, height int) string {
 	}
 
 	if s.err != nil {
-		b.WriteString("  " + errorStyle.Render(fmt.Sprintf("Error: %s", s.err.Error())) + "\n")
+		b.WriteString("  " + wrapError(s.err, width) + "\n")
 		b.WriteString("\n")
 		b.WriteString("  " + descStyle.Render("Refreshing every 2s...") + "\n")
 		b.WriteString("\n")

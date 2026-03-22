@@ -512,7 +512,7 @@ func (w wizardModel) view(width, height int) string {
 		if w.privateKey == "" && w.publicKey == "" {
 			b.WriteString(titleStyle.Render("New Profile"))
 			b.WriteString("\n\n")
-			b.WriteString(errorStyle.Render("Error: " + w.err.Error()))
+			b.WriteString(wrapError(w.err, width))
 			b.WriteString("\n\n")
 			b.WriteString(helpKey("esc", "back"))
 			return b.String()
@@ -584,7 +584,7 @@ func (w wizardModel) viewMainStep(width int) string {
 
 	// Error
 	if w.err != nil {
-		b.WriteString("  " + errorStyle.Render(w.err.Error()))
+		b.WriteString("  " + wrapError(w.err, width))
 		b.WriteString("\n\n")
 	}
 
@@ -660,7 +660,7 @@ func (w wizardModel) viewPeerStep(width int) string {
 
 	// Error
 	if w.err != nil {
-		b.WriteString("  " + errorStyle.Render(w.err.Error()))
+		b.WriteString("  " + wrapError(w.err, width))
 		b.WriteString("\n\n")
 	}
 

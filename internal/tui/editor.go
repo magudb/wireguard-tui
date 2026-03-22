@@ -443,7 +443,7 @@ func (e editorModel) view(width, height int) string {
 	// Error display
 	if e.err != nil {
 		b.WriteString("\n\n")
-		b.WriteString("  " + errorStyle.Render(e.err.Error()))
+		b.WriteString("  " + wrapError(e.err, width))
 	}
 
 	return b.String()

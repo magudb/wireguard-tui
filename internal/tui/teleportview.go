@@ -216,7 +216,7 @@ func (m teleportModel) view(width, height int) string {
 	if m.connecting {
 		b.WriteString("  " + descStyle.Render("Connecting to Amplifi router..."))
 	} else if m.err != nil {
-		b.WriteString("  " + errorStyle.Render("Error: "+m.err.Error()))
+		b.WriteString("  " + wrapError(m.err, width))
 	}
 
 	b.WriteString("\n")

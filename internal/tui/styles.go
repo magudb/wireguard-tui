@@ -60,3 +60,11 @@ var (
 func helpKey(key, desc string) string {
 	return keyStyle.Render("["+key+"]") + " " + descStyle.Render(desc)
 }
+
+// wrapError renders an error message that wraps to fit the given width.
+func wrapError(err error, width int) string {
+	if width < 20 {
+		width = 80
+	}
+	return errorStyle.Width(width - 4).Render("Error: " + err.Error())
+}

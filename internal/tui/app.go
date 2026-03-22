@@ -160,7 +160,7 @@ func (a App) View() string {
 	}
 
 	if a.err != nil {
-		content += "\n" + errorStyle.Render("Error: "+a.err.Error())
+		content += "\n" + wrapError(a.err, a.width)
 	}
 	if a.message != "" {
 		content += "\n" + successStyle.Render(a.message)

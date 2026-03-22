@@ -136,7 +136,7 @@ func (e exportModel) view(width, height int) string {
 		b.WriteString("\n\n")
 
 		if e.err != nil {
-			b.WriteString("  " + errorStyle.Render(e.err.Error()))
+			b.WriteString("  " + wrapError(e.err, width))
 			b.WriteString("\n\n")
 		}
 

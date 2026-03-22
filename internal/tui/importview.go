@@ -140,7 +140,7 @@ func (i importModel) view(width, height int) string {
 		b.WriteString("\n\n")
 
 		if i.err != nil {
-			b.WriteString("  " + errorStyle.Render(i.err.Error()))
+			b.WriteString("  " + wrapError(i.err, width))
 			b.WriteString("\n\n")
 		}
 
