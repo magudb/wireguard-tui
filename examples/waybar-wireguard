@@ -68,7 +68,7 @@
 #
 #   #!/bin/bash
 #   exec setsid uwsm-app -- xdg-terminal-exec \
-#       --app-id=org.omarchy.wireguard-tui -e sudo wireguard-tui
+#       --app-id=org.omarchy.wireguard-tui -e wireguard-tui
 #
 # Then add a Hyprland window rule to float it:
 #
