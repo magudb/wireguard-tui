@@ -57,7 +57,15 @@ func (a App) updateDetail(msg tea.Msg) (App, tea.Cmd) {
 			return a, a.status.init()
 
 		case "t":
+			if a.toggling {
+				return a, nil
+			}
 			name := a.detail.profile.Name
+			if a.detail.hasTeleportToken {
+				a.toggling = true
+				a.message = "Regenerating Teleport config..."
+				return a, teleportToggleCmd(name)
+			}
 			return a, func() tea.Msg {
 				nowUp, err := wg.Toggle(name)
 				if err != nil {

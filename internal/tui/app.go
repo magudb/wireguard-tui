@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,8 +52,9 @@ type App struct {
 
 	width   int
 	height  int
-	err     error
-	message string
+	err      error
+	message  string
+	toggling bool
 }
 
 // NewApp creates a new App starting at the list view.
@@ -82,7 +84,19 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case errMsg:
+		a.toggling = false
 		a.err = msg.err
+		return a, clearMessages()
+
+	case teleportToggleDoneMsg:
+		a.toggling = false
+		state := "DOWN"
+		if msg.nowUp {
+			state = "UP"
+		}
+		a.message = fmt.Sprintf("%s is now %s", msg.name, state)
+		a.detail.isUp = msg.nowUp
+		a.list.active[msg.name] = msg.nowUp
 		return a, clearMessages()
 
 	case clearErrMsg:

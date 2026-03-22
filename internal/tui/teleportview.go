@@ -171,6 +171,54 @@ func reconnectTeleport(name string) tea.Cmd {
 	}
 }
 
+// teleportToggleDoneMsg signals that a Teleport config was regenerated and the interface toggled.
+type teleportToggleDoneMsg struct {
+	name  string
+	nowUp bool
+}
+
+// teleportToggleCmd regenerates the Teleport config before toggling.
+// If the interface is up, it just brings it down (no regen needed).
+// If the interface is down, it regenerates config via WebRTC then brings it up.
+func teleportToggleCmd(name string) tea.Cmd {
+	return func() tea.Msg {
+		up, err := wg.IsUp(name)
+		if err != nil {
+			return errMsg{fmt.Errorf("checking interface state: %w", err)}
+		}
+
+		// Toggling OFF: just bring it down, no regen needed
+		if up {
+			if err := wg.Down(name); err != nil {
+				return errMsg{err}
+			}
+			return teleportToggleDoneMsg{name: name, nowUp: false}
+		}
+
+		// Toggling ON: regenerate config first
+		result, err := teleport.Connect("", name)
+		if err != nil {
+			return errMsg{fmt.Errorf("regenerating config: %w", err)}
+		}
+
+		iface, err := wg.ParseConfigFromString(result.ConfigText)
+		if err != nil {
+			return errMsg{fmt.Errorf("parsing generated config: %w", err)}
+		}
+		iface.Name = name
+
+		if err := wg.SaveConfig(configDir, iface); err != nil {
+			return errMsg{fmt.Errorf("saving config: %w", err)}
+		}
+
+		if err := wg.Up(name); err != nil {
+			return errMsg{err}
+		}
+
+		return teleportToggleDoneMsg{name: name, nowUp: true}
+	}
+}
+
 func (m teleportModel) view(width, height int) string {
 	var b strings.Builder
 

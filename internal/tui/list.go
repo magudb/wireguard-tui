@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mlu/wireguard-tui/internal/teleport"
 	wg "github.com/mlu/wireguard-tui/internal/wg"
 )
 
@@ -100,8 +101,16 @@ func (a App) updateList(msg tea.Msg) (App, tea.Cmd) {
 			a.currentView = viewTeleport
 			return a, nil
 		case "t":
+			if a.toggling {
+				return a, nil
+			}
 			if len(a.list.profiles) > 0 {
 				name := a.list.profiles[a.list.cursor].Name
+				if teleport.HasToken(teleport.CredentialDir, name) {
+					a.toggling = true
+					a.message = "Regenerating Teleport config..."
+					return a, teleportToggleCmd(name)
+				}
 				return a, func() tea.Msg {
 					nowUp, err := wg.Toggle(name)
 					if err != nil {
