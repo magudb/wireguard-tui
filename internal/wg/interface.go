@@ -13,7 +13,7 @@ func Up(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "wg-quick", "up", name)
+	cmd := exec.CommandContext(ctx, "sudo", "wg-quick", "up", name)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("wg-quick up %s: %w: %s", name, err, strings.TrimSpace(string(output)))
@@ -27,7 +27,7 @@ func Down(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "wg-quick", "down", name)
+	cmd := exec.CommandContext(ctx, "sudo", "wg-quick", "down", name)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("wg-quick down %s: %w: %s", name, err, strings.TrimSpace(string(output)))
@@ -43,7 +43,7 @@ func IsUp(name string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "wg", "show", name)
+	cmd := exec.CommandContext(ctx, "sudo", "wg", "show", name)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Distinguish between "interface not found" (exit code 1) and
@@ -84,7 +84,7 @@ func Toggle(name string) (nowUp bool, err error) {
 // running `wg show interfaces` and splitting the output on whitespace.
 // An empty slice is returned when no interfaces are active.
 func ListInterfaces() ([]string, error) {
-	out, err := runWgCmd("show", "interfaces")
+	out, err := runSudoWgCmd("show", "interfaces")
 	if err != nil {
 		return nil, fmt.Errorf("listing interfaces: %w", err)
 	}

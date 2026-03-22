@@ -1,0 +1,4 @@
+# Passwordless sudo for wireguard-tui
+# Install: sudo cp examples/wireguard-tui.sudoers /etc/sudoers.d/wireguard-tui
+# Replace %wheel with your user or group
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/wg, /usr/bin/wg-quick, /usr/bin/ls /etc/wireguard, /usr/bin/cat /etc/wireguard/*, /usr/bin/tee /etc/wireguard/*, /usr/bin/chmod 0600 /etc/wireguard/*, /usr/bin/rm /etc/wireguard/*

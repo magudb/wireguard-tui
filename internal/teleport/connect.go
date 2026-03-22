@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mlu/wireguard-tui/internal/wg"
@@ -15,9 +16,17 @@ const (
 	stunServer     = "stun:global.stun.twilio.com:3478"
 	devicePlatform = "iOS"
 	iceTimeout     = 30 * time.Second
-	// CredentialDir is where Teleport tokens and UUIDs are stored.
-	CredentialDir = "/etc/wireguard/.teleport"
 )
+
+// CredentialDir is where Teleport tokens and UUIDs are stored.
+// Uses XDG_CONFIG_HOME or falls back to ~/.config.
+var CredentialDir = func() string {
+	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
+		return filepath.Join(dir, "wireguard-tui", "teleport")
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config", "wireguard-tui", "teleport")
+}()
 
 // ConnectResult holds the output of a successful Teleport connection.
 type ConnectResult struct {

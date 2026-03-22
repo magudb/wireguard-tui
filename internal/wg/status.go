@@ -33,7 +33,7 @@ var durationPartRe = regexp.MustCompile(`(\d+)\s+(hour|minute|second)s?`)
 
 // GetStatus runs `wg show <name>` and parses the output into an InterfaceStatus.
 func GetStatus(name string) (*InterfaceStatus, error) {
-	out, err := runWgCmd("show", name)
+	out, err := runSudoWgCmd("show", name)
 	if err != nil {
 		return nil, fmt.Errorf("getting status for %s: %w", name, err)
 	}

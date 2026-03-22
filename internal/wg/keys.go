@@ -50,6 +50,25 @@ func runWgCmdWithInput(input string, args ...string) (string, error) {
 	return strings.TrimSpace(stdout.String()), nil
 }
 
+// runSudoWgCmd executes `sudo wg <args>` and returns trimmed stdout.
+// Used for commands that require NET_ADMIN (show, etc.).
+func runSudoWgCmd(args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+
+	fullArgs := append([]string{"wg"}, args...)
+	cmd := exec.CommandContext(ctx, "sudo", fullArgs...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("sudo wg %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
+	}
+
+	return strings.TrimSpace(stdout.String()), nil
+}
+
 // GeneratePrivateKey generates a new WireGuard private key by calling `wg genkey`.
 // The returned key is a base64-encoded 32-byte Curve25519 private key.
 func GeneratePrivateKey() (string, error) {

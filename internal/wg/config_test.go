@@ -2,10 +2,19 @@ package wg
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// skipWithoutSudo skips the test if passwordless sudo is unavailable.
+func skipWithoutSudo(t *testing.T) {
+	t.Helper()
+	if err := exec.Command("sudo", "-n", "true").Run(); err != nil {
+		t.Skip("skipping: passwordless sudo not available")
+	}
+}
 
 const sampleConfig = `[Interface]
 PrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=
@@ -240,6 +249,7 @@ func TestMarshalConfigPeerSeparation(t *testing.T) {
 }
 
 func TestLoadConfigsFromDir(t *testing.T) {
+	skipWithoutSudo(t)
 	dir := t.TempDir()
 
 	// Write two .conf files
@@ -287,6 +297,7 @@ Address = 10.0.0.2/24
 }
 
 func TestLoadConfigsFromDirEmpty(t *testing.T) {
+	skipWithoutSudo(t)
 	dir := t.TempDir()
 
 	configs, err := LoadConfigsFromDir(dir)
@@ -299,6 +310,7 @@ func TestLoadConfigsFromDirEmpty(t *testing.T) {
 }
 
 func TestSaveConfig(t *testing.T) {
+	skipWithoutSudo(t)
 	dir := t.TempDir()
 
 	iface := &Interface{
@@ -334,6 +346,7 @@ func TestSaveConfig(t *testing.T) {
 }
 
 func TestDeleteConfig(t *testing.T) {
+	skipWithoutSudo(t)
 	dir := t.TempDir()
 
 	// Create a config file to delete
@@ -352,6 +365,7 @@ func TestDeleteConfig(t *testing.T) {
 }
 
 func TestDeleteConfigNotFound(t *testing.T) {
+	skipWithoutSudo(t)
 	dir := t.TempDir()
 
 	err := DeleteConfig(dir, "nonexistent")

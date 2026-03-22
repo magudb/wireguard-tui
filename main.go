@@ -10,11 +10,6 @@ import (
 )
 
 func main() {
-	if os.Geteuid() != 0 {
-		fmt.Fprintln(os.Stderr, "wireguard-tui must be run as root (use sudo)")
-		os.Exit(1)
-	}
-
 	for _, bin := range []string{"wg", "wg-quick"} {
 		if _, err := exec.LookPath(bin); err != nil {
 			fmt.Fprintf(os.Stderr, "Required binary not found: %s\n", bin)

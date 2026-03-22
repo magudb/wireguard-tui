@@ -2,9 +2,11 @@ package wg
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -196,34 +198,36 @@ func MarshalConfig(iface *Interface) string {
 // the parsed Interface configurations. Each Interface's Name field is set from
 // the filename (without the .conf extension). Non-.conf files are ignored.
 func LoadConfigsFromDir(dir string) ([]*Interface, error) {
-	entries, err := os.ReadDir(dir)
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+
+	// List .conf files via sudo
+	cmd := exec.CommandContext(ctx, "sudo", "ls", dir)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
+		return nil, fmt.Errorf("listing %s: %w: %s", dir, err, strings.TrimSpace(string(output)))
 	}
 
 	var configs []*Interface
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if !strings.HasSuffix(entry.Name(), ".conf") {
+	for _, name := range strings.Fields(string(output)) {
+		if !strings.HasSuffix(name, ".conf") {
 			continue
 		}
 
-		path := filepath.Join(dir, entry.Name())
-		f, err := os.Open(path)
+		ctx2, cancel2 := context.WithTimeout(context.Background(), cmdTimeout)
+		catCmd := exec.CommandContext(ctx2, "sudo", "cat", filepath.Join(dir, name))
+		data, err := catCmd.Output()
+		cancel2()
 		if err != nil {
-			return nil, fmt.Errorf("opening %s: %w", path, err)
+			return nil, fmt.Errorf("reading %s: %w", name, err)
 		}
 
-		iface, err := ParseConfig(f)
-		_ = f.Close()
+		iface, err := ParseConfig(strings.NewReader(string(data)))
 		if err != nil {
-			return nil, fmt.Errorf("parsing %s: %w", path, err)
+			return nil, fmt.Errorf("parsing %s: %w", name, err)
 		}
 
-		// Set Name from filename without .conf extension
-		iface.Name = strings.TrimSuffix(entry.Name(), ".conf")
+		iface.Name = strings.TrimSuffix(name, ".conf")
 		configs = append(configs, iface)
 	}
 
@@ -234,17 +238,40 @@ func LoadConfigsFromDir(dir string) ([]*Interface, error) {
 func SaveConfig(dir string, iface *Interface) error {
 	path := filepath.Join(dir, iface.Name+".conf")
 	content := MarshalConfig(iface)
-	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
-		return fmt.Errorf("writing config %s: %w", path, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sudo", "tee", path)
+	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdout = nil // suppress tee's stdout echo
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("writing config %s: %w: %s", path, err, strings.TrimSpace(stderr.String()))
 	}
+
+	// Set permissions
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "0600", path)
+	if err := chmodCmd.Run(); err != nil {
+		return fmt.Errorf("setting permissions on %s: %w", path, err)
+	}
+
 	return nil
 }
 
 // DeleteConfig removes the configuration file dir/name.conf.
 func DeleteConfig(dir string, name string) error {
 	path := filepath.Join(dir, name+".conf")
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("removing config %s: %w", path, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sudo", "rm", path)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("removing config %s: %w: %s", path, err, strings.TrimSpace(string(output)))
 	}
 	return nil
 }
